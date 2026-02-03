@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../firebase/config';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { ShoppingBag, MessageCircle, Search, Filter } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Search, Filter, SortDesc } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PublicStore = () => {
@@ -12,6 +12,7 @@ const PublicStore = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
+    const [sortOption, setSortOption] = useState('newest');
 
     useEffect(() => {
         fetchStoreData();
@@ -68,6 +69,19 @@ const PublicStore = () => {
         return matchesSearch && matchesCategory;
     });
 
+    const sortedProducts = [...filteredProducts].sort((a, b) => {
+        if (sortOption === 'price-asc') {
+            return parseFloat(a.price) - parseFloat(b.price);
+        } else if (sortOption === 'price-desc') {
+            return parseFloat(b.price) - parseFloat(a.price);
+        } else if (sortOption === 'newest') {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+        }
+        return 0;
+    });
+
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading Store...</div>;
     if (!store) return <div style={{ padding: '2rem', textAlign: 'center' }}>Store not found</div>;
 
@@ -117,7 +131,7 @@ const PublicStore = () => {
 
             {/* Categories */}
             {categories.length > 1 && (
-                <div style={{ padding: '1rem 5%', display: 'flex', gap: '0.75rem', overflowX: 'auto', maxWidth: '1200px', margin: '0 auto', scrollbarWidth: 'none' }}>
+                <div style={{ padding: '1rem 5%', display: 'flex', gap: '0.75rem', overflowX: 'auto', maxWidth: '1200px', margin: '0 auto', scrollbarWidth: 'none', alignItems: 'center' }}>
                     {categories.map(cat => (
                         <button
                             key={cat}
@@ -136,15 +150,32 @@ const PublicStore = () => {
                 </div>
             )}
 
+            <div style={{ padding: '0 5%', maxWidth: '1200px', margin: '1rem auto 0', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Filter size={16} color="var(--text-muted)" />
+                    <select
+                        value={sortOption}
+                        onChange={(e) => setSortOption(e.target.value)}
+                        className="input"
+                        style={{ padding: '0.5rem', paddingRight: '2rem', borderRadius: '8px', border: '1px solid var(--surface-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text)', cursor: 'pointer', appearance: 'none' }}
+                    >
+                        <option value="newest" style={{ color: '#000000', background: '#ffffff' }}>Latest Arrivals</option>
+                        <option value="price-asc" style={{ color: '#000000', background: '#ffffff' }}>Price: Low to High</option>
+                        <option value="price-desc" style={{ color: '#000000', background: '#ffffff' }}>Price: High to Low</option>
+                    </select>
+                    <SortDesc size={14} style={{ position: 'absolute', right: '10px', pointerEvents: 'none', color: 'var(--text-muted)' }} />
+                </div>
+            </div>
+
             <main style={{ padding: '2rem 5%', maxWidth: '1200px', margin: '0 auto' }}>
-                {filteredProducts.length === 0 ? (
+                {sortedProducts.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
                         No products found matching your search.
                     </div>
                 ) : (
                     <div className="grid grid-cols-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem' }}>
                         <AnimatePresence>
-                            {filteredProducts.map(product => (
+                            {sortedProducts.map(product => (
                                 <motion.div
                                     layout
                                     initial={{ opacity: 0, scale: 0.9 }}
@@ -160,6 +191,9 @@ const PublicStore = () => {
                                             alt={product.name}
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
+                                        {product.createdAt && new Date(product.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                                            <span style={{ position: 'absolute', top: '8px', right: '8px', background: 'var(--primary)', color: '#fff', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>NEW</span>
+                                        )}
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <h3 style={{ fontSize: '0.9rem', marginBottom: '0.25rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.name}</h3>
