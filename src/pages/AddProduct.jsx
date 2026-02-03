@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { db } from '../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
@@ -8,14 +8,20 @@ import { ArrowLeft, Upload, FileText, Image as ImageIcon, Trash2, CheckCircle2 }
 import * as pdfjsLib from 'pdfjs-dist';
 import { compressImage } from '../utils/imageCompressor';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
 const AddProduct = () => {
     const { store } = useStore();
     const navigate = useNavigate();
     const [mode, setMode] = useState('manual'); // manual, bulk, pdf
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        // Configure PDF.js worker
+        try {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        } catch (e) {
+            console.error("Failed to configure PDF worker", e);
+        }
+    }, []);
 
     // Manual state
     const [name, setName] = useState('');

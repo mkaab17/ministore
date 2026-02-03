@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { StoreProvider } from './context/StoreContext';
 
-// Pages (to be created)
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import AddProduct from './pages/AddProduct';
-import PublicStore from './pages/PublicStore';
+// Pages (Lazy Loaded)
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const AddProduct = lazy(() => import('./pages/AddProduct'));
+const PublicStore = lazy(() => import('./pages/PublicStore'));
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -16,26 +16,34 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+const LoadingFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--background)' }}>
+    <div style={{ color: 'var(--primary)' }}>Loading App...</div>
+  </div>
+);
+
 function App() {
   return (
     <Router>
       <AuthProvider>
         <StoreProvider>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/add" element={
-              <ProtectedRoute>
-                <AddProduct />
-              </ProtectedRoute>
-            } />
-            <Route path="/s/:storeId" element={<PublicStore />} />
-          </Routes>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/add" element={
+                <ProtectedRoute>
+                  <AddProduct />
+                </ProtectedRoute>
+              } />
+              <Route path="/s/:storeId" element={<PublicStore />} />
+            </Routes>
+          </Suspense>
         </StoreProvider>
       </AuthProvider>
     </Router>
